@@ -16,6 +16,7 @@ function getCellState(cellPosition, organism) {
 
 function getCellFate(cellPosition, organism) {
   let liveNeighborCount = [
+    // Assumes a 4 neighbor (N, S, E, W) relationship
     getCellState({x: cellPosition.x, y: cellPosition.y - 1}, organism ),// top neighbor
     getCellState({x: cellPosition.x, y: cellPosition.y + 1}, organism ),// bottom neighbor
     getCellState({x: cellPosition.x - 1, y: cellPosition.y}, organism ),// left neighbor
@@ -54,14 +55,13 @@ let testData = JSON.parse(rawTestData);
 
 // run diagnostic test to verify that the basics of getNextGeneration work
 testData.forEach(testItem => {
-  const theNextGeneration = getNextGeneration(testItem.given);
+  let theNextGeneration = getNextGeneration(testItem.given);
   console.log(`testing ${testItem.name}`)
-  if (testItem.expected) {
-    assert (JSON.stringify(theNextGeneration) === JSON.stringify(testItem.expected));
-    //assert (JSON.stringify(theNextGeneration) !== JSON.stringify(testItem.expected)), 'intentionally throws an error';
-  }
-  if (testItem.testCell) {
-    assert (theNextGeneration[testItem.testCell[1]][testItem.testCell[0]] === testItem.testCell[2]);
+  if (testItem.generations) {
+    testItem.generations.forEach((expected)=> {
+      assert (JSON.stringify(theNextGeneration) === JSON.stringify(expected));
+      theNextGeneration = getNextGeneration(theNextGeneration);
+    })
   }
 });
 
