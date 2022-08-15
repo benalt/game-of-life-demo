@@ -4,7 +4,7 @@ const fs = require('fs');
 const assert = require('assert');
 const { exec } = require("child_process");
 
-const GOL_SERVICE_GET_ENDPOINT = 'https://game-of-life-service-ai3nmiz7aa-uc.a.run.app/world/3SB7qtMD';
+const GOL_SERVICE_GET_ENDPOINT = 'https://game-of-life-service-ai3nmiz7aa-uc.a.run.app/world';
 const GOL_SERVICE_POST_ENDPOINT = 'https://game-of-life-service-ai3nmiz7aa-uc.a.run.app/results'
 
 function getCellState(cellPosition, organism) {
@@ -19,7 +19,6 @@ function getCellState(cellPosition, organism) {
 
 function getCellFate(cellPosition, organism) {
   let liveNeighborCount = [
-    // Assumes a 4 neighbor (N, S, E, W) relationship
     getCellState({x: cellPosition.x, y: cellPosition.y - 1}, organism ),  // top neighbor
     getCellState({x: cellPosition.x, y: cellPosition.y + 1}, organism ),  // bottom neighbor
     getCellState({x: cellPosition.x - 1, y: cellPosition.y}, organism ),  // left neighbor
@@ -68,8 +67,17 @@ testData.forEach(testItem => {
   }
 });
 
-console.log('The Diagnostics tests have passed, performing a request for real data...');
-fetch(GOL_SERVICE_GET_ENDPOINT)
+console.log('The diagnostics tests have passed, performing a request for real data...');
+console.log('Data fetch starting.');
+fetch(GOL_SERVICE_GET_ENDPOINT, {
+  method: 'GET',
+  cache: 'no-cache',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  redirect: 'follow',
+  referrerPolicy: 'no-referrer'
+})
 .then((response) => response.json())
 .then((worldData) => {
   console.log('World data GET successful.');
@@ -80,7 +88,8 @@ fetch(GOL_SERVICE_GET_ENDPOINT)
   let newData = {
     generations: [],
     ...worldData
-  }
+  };
+
   delete newData.world;
   newData.generations.push(worldData.world.map(x=>x)); // generation 0 is the same as the world that is sent, so we duplicate it
   let i = 1; // start at 1, not 0
@@ -90,17 +99,16 @@ fetch(GOL_SERVICE_GET_ENDPOINT)
     i+=1;
   }
 
-  console.log(`${newData.generations.length} generations created`);
-
   // do some basic data verification 
+  assert(JSON.stringify(newData.generations.length) == worldData.generationCount, `expected ${generationCount} generations to be created`);
   assert(JSON.stringify(newData.generations[0]) == JSON.stringify(worldData.world));
   newData.generations.forEach( (generation) => {
     assert(generation.length === worldData.size, `expected a world with ${worldData.size} rows`);
     assert(generation[0].length === worldData.size, `expected a world with  ${worldData.size} cols`);
   });
-  console.log(`data varification complete`);
+  console.log(`data varification complete, things are the right size`);
 
-  console.log(`Starting Data Post...`);
+  console.log(`Starting new data POST...`);
   fetch(GOL_SERVICE_POST_ENDPOINT, {
     method: 'POST',
     cache: 'no-cache',
