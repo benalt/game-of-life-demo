@@ -72,7 +72,7 @@ ${JSON.stringify(expected)}`);
     })
   }
 });
-/*
+
 console.log('The diagnostics tests have passed, performing a request for real data...');
 console.log('Data fetch starting.');
 fetch(GOL_SERVICE_GET_ENDPOINT, {
@@ -142,4 +142,3 @@ fetch(GOL_SERVICE_GET_ENDPOINT, {
   console.log('Error GETting world data');
   console.log(error);
 });
-*/
