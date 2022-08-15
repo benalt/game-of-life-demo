@@ -20,10 +20,10 @@ function getCellState(cellPosition, organism) {
 function getCellFate(cellPosition, organism) {
   let liveNeighborCount = [
     // Assumes a 4 neighbor (N, S, E, W) relationship
-    getCellState({x: cellPosition.x, y: cellPosition.y - 1}, organism ),// top neighbor
-    getCellState({x: cellPosition.x, y: cellPosition.y + 1}, organism ),// bottom neighbor
-    getCellState({x: cellPosition.x - 1, y: cellPosition.y}, organism ),// left neighbor
-    getCellState({x: cellPosition.x + 1, y: cellPosition.y}, organism )// right neighbor
+    getCellState({x: cellPosition.x, y: cellPosition.y - 1}, organism ),  // top neighbor
+    getCellState({x: cellPosition.x, y: cellPosition.y + 1}, organism ),  // bottom neighbor
+    getCellState({x: cellPosition.x - 1, y: cellPosition.y}, organism ),  // left neighbor
+    getCellState({x: cellPosition.x + 1, y: cellPosition.y}, organism )   // right neighbor
   ].filter(testCellStat => testCellStat > 0).length;
   // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
   if (getCellState(cellPosition, organism) === 0 ) {
@@ -73,13 +73,17 @@ fetch(GOL_SERVICE_GET_ENDPOINT)
 .then((response) => response.json())
 .then((worldData) => {
   console.log('World data GET successful.');
+  console.log(`   worldData.generationCount : ${worldData.generationCount}`);
+  console.log(`   worldData.world[0].length : ${worldData.world[0].length}`);
+  console.log(`   worldData.size            : ${worldData.size}`);
+
   let newData = {
     generations: [],
     ...worldData
   }
   delete newData.world;
-  newData.generations.push(worldData.world.map(x=>x));
-  let i=1;
+  newData.generations.push(worldData.world.map(x=>x)); // generation 0 is the same as the world that is sent, so we duplicate it
+  let i = 1; // start at 1, not 0
   while (i<worldData.generationCount) {
     console.log(`Creating generation ${i}`);
     newData.generations.push(getNextGeneration(newData.generations[i-1]));
@@ -88,6 +92,15 @@ fetch(GOL_SERVICE_GET_ENDPOINT)
 
   console.log(`${newData.generations.length} generations created`);
 
+  // do some basic data verification 
+  assert(JSON.stringify(newData.generations[0]) == JSON.stringify(worldData.world));
+  newData.generations.forEach( (generation) => {
+    assert(generation.length === worldData.size, `expected a world with ${worldData.size} rows`);
+    assert(generation[0].length === worldData.size, `expected a world with  ${worldData.size} cols`);
+  });
+  console.log(`data varification complete`);
+
+  console.log(`Starting Data Post...`);
   fetch(GOL_SERVICE_POST_ENDPOINT, {
     method: 'POST',
     cache: 'no-cache',
@@ -100,15 +113,12 @@ fetch(GOL_SERVICE_GET_ENDPOINT)
   })
   .then(response => {
     console.log('Generations data POST successful');
-    console.log(response.status === 302, response.url );
-    if (response.status === 302 || response.redirected) {
+    if (response.redirected) {
       console.log(`Opening ${response.url}`);
       exec(`open ${response.url}`);
     } else {
-      throw `Expected a redirect got ${response.status}`;
+      throw `Expected a redirected response, instead got ${response.status}`;
     }
-    console.log(response);
-
   })
   .catch((error)=> {
     console.log('Error POSTing world data');
