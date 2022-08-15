@@ -19,24 +19,28 @@ function getCellState(cellPosition, organism) {
 
 function getCellFate(cellPosition, organism) {
   let liveNeighborCount = [
-    getCellState({x: cellPosition.x, y: cellPosition.y - 1}, organism ),  // top neighbor
-    getCellState({x: cellPosition.x, y: cellPosition.y + 1}, organism ),  // bottom neighbor
-    getCellState({x: cellPosition.x - 1, y: cellPosition.y}, organism ),  // left neighbor
-    getCellState({x: cellPosition.x + 1, y: cellPosition.y}, organism )   // right neighbor
+    getCellState({x: cellPosition.x - 1,  y: cellPosition.y - 1}, organism ),  // NW neighbor
+    getCellState({x: cellPosition.x,      y: cellPosition.y - 1}, organism ),      // N neighbor
+    getCellState({x: cellPosition.x + 1,  y: cellPosition.y - 1}, organism ),  // NE neighbor
+    getCellState({x: cellPosition.x - 1,  y: cellPosition.y},     organism ),      // W neighbor
+    getCellState({x: cellPosition.x + 1,  y: cellPosition.y},     organism ),      // E neighbor
+    getCellState({x: cellPosition.x - 1,  y: cellPosition.y + 1}, organism ),  // SW neighbor
+    getCellState({x: cellPosition.x,      y: cellPosition.y + 1}, organism ),      // S neighbor
+    getCellState({x: cellPosition.x + 1,  y: cellPosition.y + 1}, organism )   // SE neighbor
   ].filter(testCellStat => testCellStat > 0).length;
   // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
+
   if (getCellState(cellPosition, organism) === 0 ) {
     return (liveNeighborCount === 3) ? 1 : 0;
   }
   // We're only looking at live cells now
-  return [
-    //Any live cell with fewer than two live neighbors dies, as if by underpopulation.
-    0, 0, 
-    //Any live cell with two or three live neighbors lives on to the next generation.
-    1, 1,
-    //Any live cell with more than three live neighbors dies, as if by overpopulation.
-    0
-  ][liveNeighborCount];
+
+  //Any live cell with fewer than two live neighbors dies, as if by underpopulation.
+  //Any live cell with more than three live neighbors dies, as if by overpopulation.
+  if (liveNeighborCount < 2 || liveNeighborCount > 3) {
+    return 0;
+  }
+  return 1;
 }
 
 function getNextGeneration(organism) {
@@ -57,16 +61,18 @@ let testData = JSON.parse(rawTestData);
 
 // run diagnostic test to verify that the basics of getNextGeneration work
 testData.forEach(testItem => {
-  let theNextGeneration = getNextGeneration(testItem.given);
+  let theNextGeneration = getNextGeneration(testItem.world);
   console.log(`testing ${testItem.name}`)
   if (testItem.generations) {
     testItem.generations.forEach((expected)=> {
-      assert (JSON.stringify(theNextGeneration) === JSON.stringify(expected));
+      assert (JSON.stringify(theNextGeneration) === JSON.stringify(expected), `failed to match generated and expected worlds at ${testItem.name}
+${JSON.stringify(theNextGeneration)}
+${JSON.stringify(expected)}`);
       theNextGeneration = getNextGeneration(theNextGeneration);
     })
   }
 });
-
+/*
 console.log('The diagnostics tests have passed, performing a request for real data...');
 console.log('Data fetch starting.');
 fetch(GOL_SERVICE_GET_ENDPOINT, {
@@ -136,3 +142,4 @@ fetch(GOL_SERVICE_GET_ENDPOINT, {
   console.log('Error GETting world data');
   console.log(error);
 });
+*/
