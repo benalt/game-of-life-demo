@@ -2,7 +2,10 @@
 
 const fs = require('fs');
 const assert = require('assert');
+const { exec } = require("child_process");
 
+const GOL_SERVICE_GET_ENDPOINT = 'https://game-of-life-service-ai3nmiz7aa-uc.a.run.app/world/3SB7qtMD';
+const GOL_SERVICE_POST_ENDPOINT = 'https://game-of-life-service-ai3nmiz7aa-uc.a.run.app/results'
 
 function getCellState(cellPosition, organism) {
   // state: 0 - dead
@@ -65,5 +68,53 @@ testData.forEach(testItem => {
   }
 });
 
-
 console.log('The Diagnostics tests have passed, performing a request for real data...');
+fetch(GOL_SERVICE_GET_ENDPOINT)
+.then((response) => response.json())
+.then((worldData) => {
+  console.log('World data GET successful.');
+  let newData = {
+    generations: [],
+    ...worldData
+  }
+  delete newData.world;
+  newData.generations.push(worldData.world.map(x=>x));
+  let i=1;
+  while (i<worldData.generationCount) {
+    console.log(`Creating generation ${i}`);
+    newData.generations.push(getNextGeneration(newData.generations[i-1]));
+    i+=1;
+  }
+
+  console.log(`${newData.generations.length} generations created`);
+
+  fetch(GOL_SERVICE_POST_ENDPOINT, {
+    method: 'POST',
+    cache: 'no-cache',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer', 
+    body: JSON.stringify(newData) 
+  })
+  .then(response => {
+    console.log('Generations data POST successful');
+    console.log(response.status === 302, response.url );
+    if (response.status === 302 || response.redirected) {
+      console.log(`Opening ${response.url}`);
+      exec(`open ${response.url}`);
+    } else {
+      throw `Expected a redirect got ${response.status}`;
+    }
+    console.log(response);
+
+  })
+  .catch((error)=> {
+    console.log('Error POSTing world data');
+    console.log(error);
+  });
+}).catch((error)=> {
+  console.log('Error GETting world data');
+  console.log(error);
+});
