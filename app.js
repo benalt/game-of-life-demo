@@ -106,7 +106,7 @@ fetch(GOL_SERVICE_GET_ENDPOINT, {
   }
 
   // do some basic data verification 
-  assert(JSON.stringify(newData.generations.length) == worldData.generationCount, `expected ${generationCount} generations to be created`);
+  assert(JSON.stringify(newData.generations.length) == worldData.generationCount, `expected ${worldData.generationCount} generations to be created`);
   assert(JSON.stringify(newData.generations[0]) == JSON.stringify(worldData.world));
   newData.generations.forEach( (generation) => {
     assert(generation.length === worldData.size, `expected a world with ${worldData.size} rows`);
